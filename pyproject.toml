@@ -1,0 +1,38 @@
+[project]
+name = "auctionite-py"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Edward Heaver", email = "edward.heaver01@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "django>=6.1.2",
+    "djangorestframework>=3.18.3",
+]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # isort
+    "I",
+]
+
+ignore = ["E501"]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=6.1.2",
+    "pyrefly>=1.4.0",
+    "ruff>=0.17.3",
+]
