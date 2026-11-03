@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  default:
+    desc: List tasks
+    cmds:
+      - task --list
+    silent: true
+
+  run:
+    desc: Run the dev server
+    cmds:
+      - uv run python manage.py runserver
+
+  migrate:
+    desc: Apply migrations
+    cmds:
+      - uv run python manage.py migrate
+
+  makemigrations:
+    desc: Create migrations
+    cmds:
+      - uv run python manage.py makemigrations
+
+  lint:
+    desc: Check with ruff
+    cmds:
+      - uv run ruff check .
+
+  format:
+    desc: Format with ruff
+    cmds:
+      - uv run ruff check --fix .
+      - uv run ruff format .
+
+  typecheck:
+    desc: Typecheck with pyrefly
+    cmds:
+      - uv run pyrefly check
+
+  check:
+    desc: Run lint and typecheck
+    cmds:
+      - task: lint
+      - task: typecheck
