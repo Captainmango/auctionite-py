@@ -33,6 +33,7 @@ ignore = ["E501"]
 [dependency-groups]
 dev = [
     "django-stubs>=6.1.2",
+    "djangorestframework-stubs>=3.18.2",
     "pyrefly>=1.4.0",
     "ruff>=0.17.3",
 ]
