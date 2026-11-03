@@ -4,6 +4,7 @@ from typing import Optional
 
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.db.utils import IntegrityError
 
 
 class UserManager(BaseUserManager):
@@ -13,7 +14,10 @@ class UserManager(BaseUserManager):
         email = self.normalize_email(email)
         user = self.model(email=email, **kwargs)
         user.set_password(password)
-        user.save(using=self._db)
+        try:
+            user.save(using=self._db)
+        except IntegrityError as e:
+            raise e
         return user
 
     def create_superuser(self, email, password=None, **kwargs):

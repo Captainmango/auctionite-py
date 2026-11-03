@@ -66,6 +66,10 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_RENDERER_CLASSES": [
+        "src.common.renderers.EnvelopeJSONRenderer",
+    ],
+    "EXCEPTION_HANDLER": "src.common.errors.custom_exception_handler",
 }
 
 ROOT_URLCONF = "config.urls"

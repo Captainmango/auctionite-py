@@ -2,12 +2,12 @@ from typing import Any
 
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from .models import User
-from src.common.errors import ValidationErr
 
 
-class RegisterSerialiser(serializers.ModelSerializer):
+class RegisterRequestSerialiser(serializers.ModelSerializer):
     password = serializers.CharField(required=True, write_only=True, min_length=6)
     username = serializers.CharField(required=True, write_only=True)
     email = serializers.EmailField(required=True, write_only=True)
@@ -20,7 +20,7 @@ class RegisterSerialiser(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class LoginSerialiser(serializers.Serializer):
+class LoginRequestSerialiser(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
@@ -31,6 +31,10 @@ class LoginSerialiser(serializers.Serializer):
             password=attrs.get("password"),
         )
         if not user:
-            raise ValidationErr("Invalid credentials")
+            raise ValidationError("Invalid credentials")
         attrs["user"] = user
         return attrs
+
+
+class LoginResponseSerialiser(serializers.Serializer):
+    token = serializers.CharField(read_only=True)
