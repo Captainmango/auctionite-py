@@ -44,7 +44,9 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
 
     ### My Apps ###
+    "common",
     "accounts",
+    "items",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
