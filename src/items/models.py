@@ -13,6 +13,7 @@ class Item(BaseModel):
         indexes = [
             models.Index(fields=["owner_id"])
         ]
+        db_table = "items"
 
 
 class ItemPictures(BaseModel):
@@ -24,3 +25,4 @@ class ItemPictures(BaseModel):
         indexes = [
             models.Index(fields=["item_id", "sort_order"])
         ]
+        db_table = "item_pictures"

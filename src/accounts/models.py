@@ -29,3 +29,6 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     objects = UserManager()
 
+    class Meta:
+        db_table = "users"
+

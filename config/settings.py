@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "common",
     "accounts",
     "items",
+    "auctions",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
