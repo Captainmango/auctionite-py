@@ -19,6 +19,11 @@ tasks:
     cmds:
       - uv run python manage.py migrate
 
+  seed:
+    desc: Seed a demo user with five items and generated pictures
+    cmds:
+      - uv run python manage.py seed
+
   makemigrations:
     desc: Create migrations
     cmds:

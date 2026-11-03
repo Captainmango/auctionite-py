@@ -19,6 +19,7 @@ uv run python manage.py migrate
 
 ```sh
 task run        # ./manage.py runserver
+task seed       # demo user + 5 items, each with generated pictures
 task lint       # ruff check
 task format     # ruff format + import sorting
 task typecheck  # pyrefly
