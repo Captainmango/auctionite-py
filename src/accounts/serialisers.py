@@ -21,7 +21,7 @@ class RegisterRequestSerialiser(serializers.ModelSerializer):
 
 
 class LoginRequestSerialiser(serializers.Serializer):
-    email = serializers.EmailField()
+    username = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs: dict[str, Any]) -> Any:
@@ -34,7 +34,3 @@ class LoginRequestSerialiser(serializers.Serializer):
             raise ValidationError("Invalid credentials")
         attrs["user"] = user
         return attrs
-
-
-class LoginResponseSerialiser(serializers.Serializer):
-    token = serializers.CharField(read_only=True)

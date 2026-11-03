@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serialisers import RegisterRequestSerialiser, LoginRequestSerialiser, LoginResponseSerialiser
+from .serialisers import RegisterRequestSerialiser, LoginRequestSerialiser
 
 
 class RegisterView(generics.CreateAPIView):
@@ -27,7 +27,6 @@ class LoginView(APIView):
     def post(self, request: Request):
         serialiser = LoginRequestSerialiser(data=request.data, context={"request": request})
         serialiser.is_valid(raise_exception=True)
-        user = serialiser.validated_data("user")
+        user = serialiser.validated_data.get("user")
         token, _ = Token.objects.get_or_create(user=user)
-        s = LoginResponseSerialiser(data={"token": token})
-        return Response(s.data, status=status.HTTP_200_OK)
+        return Response({"token": str(token)}, status=status.HTTP_200_OK)
