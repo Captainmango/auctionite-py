@@ -8,3 +8,4 @@ class RegisterViewTest(TestCase):
             "email": "admin@admin.com",
             "password": "super-secure"
         })
+        self.assertIs(res, "ww")

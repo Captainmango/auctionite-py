@@ -28,4 +28,4 @@ task check      # lint + typecheck
 ## Layout
 
 - `config/` — settings, urls, wsgi/asgi
-- `apps/` — Django apps
+- `src` — Django apps
