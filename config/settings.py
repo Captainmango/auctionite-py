@@ -103,10 +103,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
-
-# Postgres runs in docker (see docker-compose.yml); connection values come
-# from .env. Tests never touch dev data: `manage.py test` uses the separate
-# TEST_DATABASE_NAME database, created and destroyed around each run.
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
