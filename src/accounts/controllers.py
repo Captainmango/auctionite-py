@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user
 from django.contrib.auth.models import AnonymousUser
 from django.db.utils import IntegrityError
 from rest_framework import status
@@ -6,15 +5,16 @@ from rest_framework.authtoken.models import Token
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from accounts.serialisers import RegisterRequestSerialiser, LoginRequestSerialiser, UserSerialiser
+from accounts.serialisers import (
+    LoginRequestSerialiser,
+    RegisterRequestSerialiser,
+    UserSerialiser,
+)
 
 
 class AccountsController:
     def __init__(
-            self,
-            register_serialiser = None,
-            login_serialiser = None,
-            me_serialiser = None
+        self, register_serialiser=None, login_serialiser=None, me_serialiser=None
     ):
         self._register_serialiser = register_serialiser or RegisterRequestSerialiser
         self._login_serialiser = login_serialiser or LoginRequestSerialiser
@@ -30,7 +30,9 @@ class AccountsController:
         return Response(serialiser.data, status=status.HTTP_201_CREATED)
 
     def login_user(self, request: Request) -> Response:
-        serialiser = self._login_serialiser(data=request.data, context={"request": request})
+        serialiser = self._login_serialiser(
+            data=request.data, context={"request": request}
+        )
         serialiser.is_valid(raise_exception=True)
         user = serialiser.validated_data.get("user")
         token, _ = Token.objects.get_or_create(user=user)
@@ -41,4 +43,3 @@ class AccountsController:
             serialiser = self._me_serialiser(request.user)
             return Response(serialiser.data, status=status.HTTP_200_OK)
         return Response({}, status=status.HTTP_401_UNAUTHORIZED)
-

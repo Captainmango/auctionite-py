@@ -1,16 +1,13 @@
-from typing import Any
-
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from accounts.models import User
 
-User = get_user_model()
 payload = {
     "username": "test123",
     "email": "admin@admin.com",
-    "password": "super-secure"
+    "password": "super-secure",
 }
 
 
@@ -21,7 +18,8 @@ class RegisterViewTest(APITestCase):
     def test_it_can_register_when_details_are_correct(self):
         res = self.client.post(self.url, payload, format="json")
         self.assertIs(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(res.json(), {"data": {"id": 1}})
+        user = User.objects.get(username=payload["username"])
+        self.assertEqual(res.json(), {"data": {"id": user.id}})
 
     def test_it_rejects_duplicate_username(self):
         User.objects.create_user(**payload)
@@ -59,25 +57,40 @@ class LoginViewTests(APITestCase):
         res = self.client.post(self.url, bad_payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         json = res.json()
-        self.assertEqual(json, {'non_field_errors': ['Invalid credentials']})
+        self.assertEqual(json, {"non_field_errors": ["Invalid credentials"]})
 
 
 class MeDetailsViewTest(APITestCase):
     def setUp(self) -> None:
         self.url = reverse("users.details")
-        User.objects.create_user(**payload)
-        self.token = self.client.post(reverse("users.login"),
-   {
-            "username": "test123",
-            "password": "super-secure",
-        }, format="json").json().get("data", {}).get("token")
+        self.user = User.objects.create_user(**payload)
+        self.token = (
+            self.client.post(
+                reverse("users.login"),
+                {
+                    "username": "test123",
+                    "password": "super-secure",
+                },
+                format="json",
+            )
+            .json()
+            .get("data", {})
+            .get("token")
+        )
 
     def test_it_gets_details_when_logged_in(self):
-        res = self.client.get(self.url, headers={"Authorization": "Token %s" % self.token})
+        res = self.client.get(
+            self.url, headers={"Authorization": "Token %s" % self.token}
+        )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.json(), {"data": {
-            "email": payload.get("email"),
-            "first_name": "",
-            "last_name": "",
-            "id": 1,
-        }})
+        self.assertEqual(
+            res.json(),
+            {
+                "data": {
+                    "email": payload.get("email"),
+                    "first_name": "",
+                    "last_name": "",
+                    "id": self.user.id,
+                }
+            },
+        )

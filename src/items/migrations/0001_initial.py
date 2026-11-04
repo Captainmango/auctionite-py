@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,39 +14,52 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Item',
+            name="Item",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(max_length=200)),
-                ('description', models.TextField()),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("name", models.CharField(max_length=200)),
+                ("description", models.TextField()),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'items',
+                "db_table": "items",
             },
         ),
         migrations.CreateModel(
-            name='ItemPictures',
+            name="ItemPictures",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('blob', models.BinaryField()),
-                ('sort_order', models.IntegerField(default=0)),
-                ('item', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='items.item')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("blob", models.BinaryField()),
+                ("sort_order", models.IntegerField(default=0)),
+                (
+                    "item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.DO_NOTHING, to="items.item"
+                    ),
+                ),
             ],
             options={
-                'db_table': 'item_pictures',
+                "db_table": "item_pictures",
             },
         ),
         migrations.AddIndex(
-            model_name='item',
-            index=models.Index(fields=['owner_id'], name='items_owner_i_de1a40_idx'),
+            model_name="item",
+            index=models.Index(fields=["owner_id"], name="items_owner_i_de1a40_idx"),
         ),
         migrations.AddIndex(
-            model_name='itempictures',
-            index=models.Index(fields=['item_id', 'sort_order'], name='item_pictur_item_id_5ab205_idx'),
+            model_name="itempictures",
+            index=models.Index(
+                fields=["item_id", "sort_order"], name="item_pictur_item_id_5ab205_idx"
+            ),
         ),
     ]

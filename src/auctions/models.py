@@ -5,14 +5,14 @@ from items.models import Item
 
 
 class Listing(BaseModel):
-    item = models.OneToOneField(Item, on_delete=models.DO_NOTHING, blank=False, null=False)
+    item = models.OneToOneField(
+        Item, on_delete=models.DO_NOTHING, blank=False, null=False
+    )
     starting_price = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
         db_table = "listings"
-        indexes = [
-            models.Index(fields=["item_id"])
-        ]
+        indexes = [models.Index(fields=["item_id"])]
 
 
 class ListingSchedule(BaseModel):
@@ -50,13 +50,13 @@ class ListingStateTransition(BaseModel):
 
     class Meta:
         db_table = "listing_status_transitions"
-        indexes = [
-            models.Index(fields=["listing_id", "-created_at"])
-        ]
+        indexes = [models.Index(fields=["listing_id", "-created_at"])]
 
 
 class Bid(BaseModel):
-    listing = models.ForeignKey(Listing, on_delete=models.DO_NOTHING, related_name="bids")
+    listing = models.ForeignKey(
+        Listing, on_delete=models.DO_NOTHING, related_name="bids"
+    )
     user = models.ForeignKey(Listing, on_delete=models.DO_NOTHING)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
@@ -70,4 +70,3 @@ class Bid(BaseModel):
                 name="idx_bids_listing_leading",
             ),
         ]
-

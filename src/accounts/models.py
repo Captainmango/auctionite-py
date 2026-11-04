@@ -1,18 +1,28 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional, TypeVar
 
-from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import UserManager as DjangoUserManager
 from django.db.utils import IntegrityError
 
+_T = TypeVar("_T", bound=AbstractUser)
 
-class UserManager(BaseUserManager):
-    def create_user(self, email: str, password: Optional[str] = None, **kwargs) -> "User":
+
+class UserManager(DjangoUserManager[_T]):
+    use_in_migrations = False
+
+    def create_user(
+        self,
+        username: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        **extra_fields: Any,
+    ) -> _T:
         if not email:
             raise ValueError("Email required")
         email = self.normalize_email(email)
-        user = self.model(email=email, **kwargs)
+        user = self.model(username=username, email=email, **extra_fields)
         user.set_password(password)
         try:
             user.save(using=self._db)
@@ -20,10 +30,16 @@ class UserManager(BaseUserManager):
             raise e
         return user
 
-    def create_superuser(self, email, password=None, **kwargs):
-        kwargs.setdefault("is_staff", True)
-        kwargs.setdefault("is_superuser", True)
-        return self.create_user(email, password, **kwargs)
+    def create_superuser(
+        self,
+        username: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        **extra_fields: Any,
+    ) -> _T:
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return self.create_user(username, email, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -31,4 +47,3 @@ class User(AbstractUser):
 
     class Meta:
         db_table = "users"
-

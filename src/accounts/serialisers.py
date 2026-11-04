@@ -4,7 +4,6 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from config import settings
 from .models import User
 
 

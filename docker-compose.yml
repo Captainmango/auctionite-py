@@ -9,8 +9,9 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?set DATABASE_PASSWORD in .env}
       POSTGRES_DB: ${DATABASE_NAME:?set DATABASE_NAME in .env}
       PGDATA: /var/lib/postgresql/data/pgdata
+      DB_PORT: ${DATABASE_PORT:?set DATABASE_PORT in .env}
     ports:
-      - "${DATABASE_PORT:?set DATABASE_PORT in .env}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

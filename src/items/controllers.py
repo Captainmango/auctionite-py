@@ -1,29 +1,26 @@
-import io
-
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.settings import api_settings
 
-from config import settings
 from items.models import Item, ItemPictures
-from items.serialisers import ItemSerialiser, ItemPicturesSerialiser, CreateItemRequest
+from items.serialisers import CreateItemRequest, ItemPicturesSerialiser, ItemSerialiser
 
+_paginator = LimitOffsetPagination()
 
-_paginator: LimitOffsetPagination = api_settings.DEFAULT_PAGINATION_CLASS()
 
 class ItemController:
     def __init__(
-            self,
-            item_serialiser = None,
-            item_picture_serialiser = None,
-            item_create_serialiser = None
+        self,
+        item_serialiser=None,
+        item_picture_serialiser=None,
+        item_create_serialiser=None,
     ):
         self._item_serialiser = item_serialiser or ItemSerialiser
-        self._item_picture_serialiser = item_picture_serialiser or ItemPicturesSerialiser
+        self._item_picture_serialiser = (
+            item_picture_serialiser or ItemPicturesSerialiser
+        )
         self._item_create_serialiser = item_create_serialiser or CreateItemRequest
 
     def create_item(self, request: Request) -> Response:
@@ -34,8 +31,10 @@ class ItemController:
             description=serialiser.data.get("description"),
             owner_id=request.user.id,
         )
-        pictures_to_upload = [ItemPictures(blob=b.read(), item_id=item.id)
-                              for b in serialiser.validated_data.get("pictures", [])]
+        pictures_to_upload = [
+            ItemPictures(blob=b.read(), item_id=item.id)
+            for b in serialiser.validated_data.get("pictures", [])
+        ]
         item.item_pictures.bulk_create(pictures_to_upload)
 
         return Response(serialiser.data, status=status.HTTP_201_CREATED)
@@ -48,18 +47,14 @@ class ItemController:
         Item.objects.filter(id=item_id).update(**to_update)
         item.refresh_from_db()
         return Response(
-            self._item_serialiser(instance=item).data,
-            status=status.HTTP_200_OK
+            self._item_serialiser(instance=item).data, status=status.HTTP_200_OK
         )
 
     def delete_item(self, _request: Request, item_id: int) -> Response:
         rows_del, _ = Item.objects.filter(id=item_id).delete()
         if rows_del == 0:
             return Response({}, status=status.HTTP_404_NOT_FOUND)
-        return Response(
-            {},
-            status=status.HTTP_200_OK
-        )
+        return Response({}, status=status.HTTP_200_OK)
 
     def get_items(self, request: Request) -> Response:
         items = Item.objects.filter(owner_id=request.user.id)

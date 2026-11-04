@@ -5,98 +5,154 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('items', '0001_initial'),
+        ("items", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Listing',
+            name="Listing",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('starting_price', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('item', models.OneToOneField(on_delete=django.db.models.deletion.DO_NOTHING, to='items.item')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "starting_price",
+                    models.DecimalField(decimal_places=2, max_digits=12),
+                ),
+                (
+                    "item",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.DO_NOTHING, to="items.item"
+                    ),
+                ),
             ],
             options={
-                'db_table': 'listings',
+                "db_table": "listings",
             },
         ),
         migrations.CreateModel(
-            name='Bid',
+            name="Bid",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('listing', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='bids', to='auctions.listing')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='auctions.listing')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "listing",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        related_name="bids",
+                        to="auctions.listing",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        to="auctions.listing",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'bids',
+                "db_table": "bids",
             },
         ),
         migrations.CreateModel(
-            name='ListingSchedule',
+            name="ListingSchedule",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('activates_at', models.DateTimeField(null=True)),
-                ('deactivates_at', models.DateTimeField(null=True)),
-                ('listing', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='auctions.listing')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("activates_at", models.DateTimeField(null=True)),
+                ("deactivates_at", models.DateTimeField(null=True)),
+                (
+                    "listing",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        to="auctions.listing",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'listing_schedules',
+                "db_table": "listing_schedules",
             },
         ),
         migrations.CreateModel(
-            name='ListingStateTransition',
+            name="ListingStateTransition",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('status', models.CharField(choices=[('DRAFT', 'DRAFT'), ('ACTIVE', 'ACTIVE'), ('INACTIVE', 'INACTIVE'), ('VOID', 'VOID'), ('COMPLETE', 'COMPLETE')], default='DRAFT')),
-                ('listing', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='auctions.listing')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("DRAFT", "DRAFT"),
+                            ("ACTIVE", "ACTIVE"),
+                            ("INACTIVE", "INACTIVE"),
+                            ("VOID", "VOID"),
+                            ("COMPLETE", "COMPLETE"),
+                        ],
+                        default="DRAFT",
+                    ),
+                ),
+                (
+                    "listing",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        to="auctions.listing",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'listing_status_transitions',
+                "db_table": "listing_status_transitions",
             },
         ),
         migrations.AddIndex(
-            model_name='listing',
-            index=models.Index(fields=['item_id'], name='listings_item_id_7dc84e_idx'),
+            model_name="listing",
+            index=models.Index(fields=["item_id"], name="listings_item_id_7dc84e_idx"),
         ),
         migrations.AddIndex(
-            model_name='bid',
-            index=models.Index(fields=['listing_id'], name='bids_listing_346efc_idx'),
+            model_name="bid",
+            index=models.Index(fields=["listing_id"], name="bids_listing_346efc_idx"),
         ),
         migrations.AddIndex(
-            model_name='bid',
-            index=models.Index(fields=['user_id'], name='bids_user_id_a02789_idx'),
+            model_name="bid",
+            index=models.Index(fields=["user_id"], name="bids_user_id_a02789_idx"),
         ),
         migrations.AddIndex(
-            model_name='bid',
-            index=models.Index(fields=['listing_id', '-amount', 'created_at'], name='idx_bids_listing_leading'),
+            model_name="bid",
+            index=models.Index(
+                fields=["listing_id", "-amount", "created_at"],
+                name="idx_bids_listing_leading",
+            ),
         ),
         migrations.AddIndex(
-            model_name='listingschedule',
-            index=models.Index(fields=['listing_id'], name='listing_sch_listing_303701_idx'),
+            model_name="listingschedule",
+            index=models.Index(
+                fields=["listing_id"], name="listing_sch_listing_303701_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='listingschedule',
-            index=models.Index(fields=['activates_at'], name='listing_sch_activat_aa306f_idx'),
+            model_name="listingschedule",
+            index=models.Index(
+                fields=["activates_at"], name="listing_sch_activat_aa306f_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='listingschedule',
-            index=models.Index(fields=['deactivates_at'], name='listing_sch_deactiv_30fac4_idx'),
+            model_name="listingschedule",
+            index=models.Index(
+                fields=["deactivates_at"], name="listing_sch_deactiv_30fac4_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='listingstatetransition',
-            index=models.Index(fields=['listing_id', '-created_at'], name='listing_sta_listing_941659_idx'),
+            model_name="listingstatetransition",
+            index=models.Index(
+                fields=["listing_id", "-created_at"],
+                name="listing_sta_listing_941659_idx",
+            ),
         ),
     ]

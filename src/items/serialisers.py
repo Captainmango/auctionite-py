@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from accounts.serialisers import UserSerialiser
-from items.models import ItemPictures, Item
+from items.models import Item, ItemPictures
 
 
 class CreateItemRequest(serializers.Serializer):
@@ -13,6 +13,7 @@ class CreateItemRequest(serializers.Serializer):
         allow_empty=True,
         max_length=5,
     )
+
 
 class ItemPicturesSerialiser(serializers.ModelSerializer):
     class Meta:
