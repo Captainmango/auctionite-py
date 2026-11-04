@@ -9,12 +9,18 @@ https://docs.djangoproject.com/en/6.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
+
 import sys
 from pathlib import Path
 
+from config.env import env, load_env_file
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE_DIR / "src")) # Nasty hack to get src on path
+sys.path.insert(0, str(BASE_DIR / "src"))  # Nasty hack to get src on path
+
+# .env drives both Django and docker-compose.yml; real env vars take precedence.
+load_env_file(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -38,11 +44,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     ### Rest Framework ###
     "rest_framework",
     "rest_framework.authtoken",
-
     ### My Apps ###
     "common",
     "accounts",
@@ -73,8 +77,8 @@ REST_FRAMEWORK = {
         "src.common.renderers.EnvelopeJSONRenderer",
     ],
     "EXCEPTION_HANDLER": "src.common.errors.custom_exception_handler",
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 10
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "PAGE_SIZE": 10,
 }
 
 ROOT_URLCONF = "config.urls"
@@ -100,10 +104,20 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+# Postgres runs in docker (see docker-compose.yml); connection values come
+# from .env. Tests never touch dev data: `manage.py test` uses the separate
+# TEST_DATABASE_NAME database, created and destroyed around each run.
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("DATABASE_NAME"),
+        "USER": env("DATABASE_USER"),
+        "PASSWORD": env("DATABASE_PASSWORD"),
+        "HOST": env("DATABASE_HOST"),
+        "PORT": env("DATABASE_PORT"),
+        "TEST": {
+            "NAME": env("TEST_DATABASE_NAME"),
+        },
     }
 }
 

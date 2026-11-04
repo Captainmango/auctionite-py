@@ -11,6 +11,7 @@ dependencies = [
     "django>=6.1.2",
     "djangorestframework>=3.18.3",
     "pillow>=13.0.0",
+    "psycopg[binary]>=3.2",
 ]
 
 [tool.pyrefly]
@@ -18,6 +19,9 @@ project-includes = [
     "**/*.py*",
     "**/*.ipynb",
 ]
+# "src" holds the Django apps (added to sys.path at runtime by settings),
+# "." holds the config package
+search-path = ["src", "."]
 
 [tool.ruff.lint]
 select = [
@@ -36,5 +40,6 @@ dev = [
     "django-stubs>=6.1.2",
     "djangorestframework-stubs>=3.18.2",
     "pyrefly>=1.4.0",
+    "python-dotenv>=1.2.4",
     "ruff>=0.17.3",
 ]

@@ -9,20 +9,44 @@ tasks:
       - task --list
     silent: true
 
+  db:up:
+    desc: Start postgres in docker (waits until healthy)
+    cmds:
+      - docker compose up -d --wait
+
+  db:down:
+    desc: Stop postgres
+    cmds:
+      - docker compose down
+
+  db:psql:
+    desc: Open psql against the dev database
+    cmds:
+      - docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+
   run:
     desc: Run the dev server
+    deps: [db:up]
     cmds:
       - uv run python manage.py runserver
 
   migrate:
     desc: Apply migrations
+    deps: [db:up]
     cmds:
       - uv run python manage.py migrate
 
   seed:
     desc: Seed a demo user with five items and generated pictures
+    deps: [db:up]
     cmds:
       - uv run python manage.py seed
+
+  test:
+    desc: Run tests against the separate auctionite_test database
+    deps: [db:up]
+    cmds:
+      - uv run python manage.py test
 
   makemigrations:
     desc: Create migrations

@@ -10,3 +10,6 @@ wheels/
 # Virtual environments
 .venv
 db.sqlite3
+
+# Local environment (keep .env.example in git)
+.env
