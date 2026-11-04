@@ -73,6 +73,8 @@ REST_FRAMEWORK = {
         "src.common.renderers.EnvelopeJSONRenderer",
     ],
     "EXCEPTION_HANDLER": "src.common.errors.custom_exception_handler",
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
 }
 
 ROOT_URLCONF = "config.urls"

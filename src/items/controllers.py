@@ -2,12 +2,18 @@ import io
 
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework import status
+from rest_framework.generics import get_object_or_404
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 
+from config import settings
 from items.models import Item, ItemPictures
 from items.serialisers import ItemSerialiser, ItemPicturesSerialiser, CreateItemRequest
 
+
+_paginator: LimitOffsetPagination = api_settings.DEFAULT_PAGINATION_CLASS()
 
 class ItemController:
     def __init__(
@@ -33,3 +39,30 @@ class ItemController:
         item.item_pictures.bulk_create(pictures_to_upload)
 
         return Response(serialiser.data, status=status.HTTP_201_CREATED)
+
+    def update_item(self, request: Request, item_id: int) -> Response:
+        item = get_object_or_404(Item, pk=item_id)
+        serialiser = self._item_create_serialiser(data=request.data)
+        serialiser.is_valid(raise_exception=True)
+        to_update = {k: serialiser.data[k] for k in ["name", "description"]}
+        Item.objects.filter(id=item_id).update(**to_update)
+        item.refresh_from_db()
+        return Response(
+            self._item_serialiser(instance=item).data,
+            status=status.HTTP_200_OK
+        )
+
+    def delete_item(self, _request: Request, item_id: int) -> Response:
+        rows_del, _ = Item.objects.filter(id=item_id).delete()
+        if rows_del == 0:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {},
+            status=status.HTTP_200_OK
+        )
+
+    def get_items(self, request: Request) -> Response:
+        items = Item.objects.filter(owner_id=request.user.id)
+        page = _paginator.paginate_queryset(items, request)
+        serialiser = self._item_serialiser(instance=page, many=True)
+        return _paginator.get_paginated_response(serialiser.data)
