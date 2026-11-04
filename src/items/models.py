@@ -17,7 +17,7 @@ class Item(BaseModel):
 
 
 class ItemPictures(BaseModel):
-    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name="item_pictures")
     blob = models.BinaryField()
     sort_order = models.IntegerField(default=0)
 

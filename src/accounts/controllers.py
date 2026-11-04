@@ -1,10 +1,12 @@
+from django.contrib.auth import get_user
+from django.contrib.auth.models import AnonymousUser
 from django.db.utils import IntegrityError
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from accounts.serialisers import RegisterRequestSerialiser, LoginRequestSerialiser
+from accounts.serialisers import RegisterRequestSerialiser, LoginRequestSerialiser, UserSerialiser
 
 
 class AccountsController:
@@ -12,9 +14,11 @@ class AccountsController:
             self,
             register_serialiser = None,
             login_serialiser = None,
+            me_serialiser = None
     ):
         self._register_serialiser = register_serialiser or RegisterRequestSerialiser
         self._login_serialiser = login_serialiser or LoginRequestSerialiser
+        self._me_serialiser = me_serialiser or UserSerialiser
 
     def register_user(self, request: Request) -> Response:
         serialiser = self._register_serialiser(data=request.data)
@@ -31,3 +35,10 @@ class AccountsController:
         user = serialiser.validated_data.get("user")
         token, _ = Token.objects.get_or_create(user=user)
         return Response({"token": str(token)}, status=status.HTTP_200_OK)
+
+    def me_details(self, request: Request) -> Response:
+        if not isinstance(request.user, AnonymousUser):
+            serialiser = self._me_serialiser(request.user)
+            return Response(serialiser.data, status=status.HTTP_200_OK)
+        return Response({}, status=status.HTTP_401_UNAUTHORIZED)
+

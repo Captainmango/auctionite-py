@@ -1,9 +1,10 @@
 from typing import Any
 
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from config import settings
 from .models import User
 
 
@@ -34,3 +35,9 @@ class LoginRequestSerialiser(serializers.Serializer):
             raise ValidationError("Invalid credentials")
         attrs["user"] = user
         return attrs
+
+
+class UserSerialiser(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ["id", "first_name", "last_name", "email"]

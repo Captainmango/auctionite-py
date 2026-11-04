@@ -60,3 +60,24 @@ class LoginViewTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         json = res.json()
         self.assertEqual(json, {'non_field_errors': ['Invalid credentials']})
+
+
+class MeDetailsViewTest(APITestCase):
+    def setUp(self) -> None:
+        self.url = reverse("users.details")
+        User.objects.create_user(**payload)
+        self.token = self.client.post(reverse("users.login"),
+   {
+            "username": "test123",
+            "password": "super-secure",
+        }, format="json").json().get("data", {}).get("token")
+
+    def test_it_gets_details_when_logged_in(self):
+        res = self.client.get(self.url, headers={"Authorization": "Token %s" % self.token})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.json(), {"data": {
+            "email": payload.get("email"),
+            "first_name": "",
+            "last_name": "",
+            "id": 1,
+        }})
