@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Optional
 
 from auctions.models import Listing, ListingStateTransition, ListingStatus
 from items.models import Item
@@ -30,29 +31,37 @@ def _transition_listing_state(listing: Listing, state: ListingStatus) -> Listing
     - Inactive can transition to Active, Void, or Complete
     - Void and Complete cannot transition. They are terminal.
     """
-    current_state = ListingStateTransition.objects.order_by("-created_at", "-id").only("status")
-    next_state = lambda : ListingStateTransition.objects.create(listing_id=listing.pk, status=state.value)
-    if not current_state or current_state not in list(ListingStatus):
+    current_state: ListingStateTransition | None = ListingStateTransition.objects.filter(listing_id=listing.id).order_by("-created_at", "-id").only("status").first()
+    def next_state():
+        ListingStateTransition.objects.create(listing_id=listing.pk, status=state.value)
+
+    if not current_state or current_state.status not in list(ListingStatus):
         ListingStateTransition.objects.create(listing_id=listing.pk, status=ListingStatus.DRAFT.value)
         return listing
 
-    if current_state in [ListingStatus.COMPLETE, ListingStatus.VOID]:
+    if current_state.status in [ListingStatus.COMPLETE, ListingStatus.VOID]:
         raise RuntimeError("Cannot transition completed/ voided Listing.")
 
-    if current_state == ListingStatus.DRAFT.value:
+    if current_state.status == ListingStatus.DRAFT.value:
         if state in [ListingStatus.ACTIVE, ListingStatus.VOID, ListingStatus.INACTIVE]:
             next_state()
             return listing
+        else:
+            raise RuntimeError("Invalid transition")
 
-    if current_state == ListingStatus.ACTIVE.value:
+    if current_state.status == ListingStatus.ACTIVE.value:
         if state in [ListingStatus.INACTIVE, ListingStatus.VOID, ListingStatus.COMPLETE]:
             next_state()
             return listing
+        else:
+            raise RuntimeError("Invalid transition")
 
-    if current_state == ListingStatus.INACTIVE.value:
+    if current_state.status == ListingStatus.INACTIVE.value:
         if state in [ListingStatus.ACTIVE, ListingStatus.VOID, ListingStatus.COMPLETE]:
             next_state()
             return listing
+        else:
+            raise RuntimeError("Invalid transition")
 
     return listing
 

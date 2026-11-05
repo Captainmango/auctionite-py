@@ -4,7 +4,6 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from auctions.models import ListingStatus
 from items.models import Item, ItemPictures
 from items.serialisers import CreateItemRequest, ItemPicturesSerialiser, ItemSerialiser
 
@@ -42,9 +41,9 @@ class ItemController:
 
     def update_item(self, request: Request, item_id: int) -> Response:
         item = get_object_or_404(Item, pk=item_id)
-        if l := item.listing:
-            if not l.can_be_edited:
-                raise RuntimeError("oops")
+        listing = getattr(item, "listing", None)
+        if listing is not None and not listing.can_be_edited:
+            return Response({}, status=status.HTTP_409_CONFLICT)
 
         serialiser = self._item_create_serialiser(data=request.data)
         serialiser.is_valid(raise_exception=True)

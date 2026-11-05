@@ -9,11 +9,14 @@ from auctions.controllers import ListingController
 _listing_controller = ListingController()
 
 
-class ListingListView(APIView):
+class ListingBasicView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request: Request) -> Response:
         return _listing_controller.get_listings(request)
+
+    def post(self, request: Request) -> Response:
+        return _listing_controller.create_listing(request)
 
 
 class ListingDetailsView(APIView):

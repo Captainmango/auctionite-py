@@ -33,8 +33,10 @@ class Listing(BaseModel):
 
     @property
     def can_be_edited(self) -> bool:
-        current_state = ListingStatus(ListingStateTransition.objects.order_by("-created_at", "-id").only("status").first())
-        return current_state in ListingStatus.editable_states()
+        latest = self.status.order_by("-created_at", "-id").only("status").first()
+        if latest is None:
+            return True
+        return ListingStatus(latest.status) in ListingStatus.editable_states()
 
 
 class ListingSchedule(BaseModel):
