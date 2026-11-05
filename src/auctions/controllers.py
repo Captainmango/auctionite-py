@@ -1,3 +1,5 @@
+from typing import cast
+
 from django.db.models.query import Prefetch
 from rest_framework import status, response
 from rest_framework.generics import get_object_or_404
@@ -6,8 +8,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from auctions.models import Listing, ListingStateTransition
-from auctions.serialisers import ListingDetailsSerialiser, ListingSerialiser, CreateListingRequest
-from auctions.services import CreateListingPayload, create_listing
+from auctions.serialisers import ListingDetailsSerialiser, ListingSerialiser, CreateListingRequest, BidAmountSerialiser
+from auctions.services import CreateListingPayload, create_listing, place_bid_for, CannotBidOnOwnListing, \
+    BidBehindCurrentLeader, BidBelowStartingPrice, AlreadyLeadingAuction
 from items.models import Item
 
 _paginator = LimitOffsetPagination()
@@ -43,3 +46,20 @@ class ListingController:
         )
         listing = create_listing(payload)
         return Response(ListingSerialiser(instance=listing).data, status=status.HTTP_200_OK)
+
+    def place_bid(self, request: Request, listing_id: int) -> Response:
+        serialiser = BidAmountSerialiser(data=request.data)
+        serialiser.is_valid(raise_exception=True)
+        listing = get_object_or_404(Listing, pk=listing_id)
+        user_id: int = cast(int, request.user.pk)
+        try:
+            place_bid_for(user_id, listing, serialiser.validated_data.get("amount"))
+        except CannotBidOnOwnListing as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+        except AlreadyLeadingAuction as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+        except BidBehindCurrentLeader as e:
+            return Response({"error": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except BidBelowStartingPrice as e:
+            return Response({"error": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return Response({}, status=status.HTTP_200_OK)

@@ -41,3 +41,7 @@ class ListingDetailsSerialiser(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = ["id", "starting_price", "current_status", "scheduled_times", "item"]
+
+
+class BidAmountSerialiser(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0, required=True)

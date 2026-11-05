@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -263,3 +264,54 @@ class ListingStateMachineTest(TestCase):
 
     def test_can_be_edited_with_no_state(self):
         self.assertTrue(self.listing.can_be_edited)
+
+
+class AuctionBidViewTest(APITestCase):
+    def setUp(self) -> None:
+        self.owner = User.objects.create_user(**payload)
+
+        buyer_details = payload.copy()
+        buyer_details["username"] = "buyer"
+        buyer_details["email"] = "buyer@buyer.com"
+
+        self.buyer = User.objects.create_user(**buyer_details)
+        item = Item.objects.create(
+            name="Test Item 1",
+            description="Test Item Description",
+            owner_id=self.owner.id,
+        )
+        self.listing = create_dummy_listing(item=item, price=Decimal(25.00))
+        self.url = reverse("listings.bid", kwargs={"listing_id": self.listing.id})
+
+    def test_it_stops_owner_bidding_on_own_listing(self):
+        self.client.force_authenticate(self.owner)
+        res = self.client.post(self.url, {
+            "amount": 26.00
+        })
+        self.assertEqual(res.status_code, status.HTTP_409_CONFLICT)
+
+    def test_it_ensures_starting_price_is_checked(self):
+        self.client.force_authenticate(self.buyer)
+        res = self.client.post(self.url, {
+            "amount": 20.00
+        })
+        self.assertEqual(res.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    def test_it_does_not_allow_double_bidding(self):
+        self.client.force_authenticate(self.buyer)
+        self.client.post(self.url, {
+            "amount": 26.00
+        })
+        res = self.client.post(self.url, {
+            "amount": 27.00
+        })
+        self.assertEqual(res.status_code, status.HTTP_409_CONFLICT)
+
+    def test_it_waits_to_place_bid(self):
+        self.client.force_authenticate(self.buyer)
+        cache.set(f"{self.listing.pk}-{self.buyer.pk}", "", timeout=2)
+        res = self.client.post(self.url, {
+            "amount": 26.00
+        })
+        print(res.json())
+        self.assertEqual(res.status_code, status.HTTP_200_OK)

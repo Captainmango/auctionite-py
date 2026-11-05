@@ -2,7 +2,11 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
-from auctions.models import Listing, ListingStateTransition, ListingStatus
+from django.core.cache import cache
+
+from accounts.models import User
+from auctions.models import Listing, ListingStateTransition, ListingStatus, Bid
+from common.helpers import synchronise
 from items.models import Item
 
 
@@ -20,6 +24,7 @@ def create_listing(payload: CreateListingPayload) -> Listing:
     ListingStateTransition.objects.create(listing_id=listing.pk, status=ListingStatus.DRAFT.value)
     return listing
 
+
 def _transition_listing_state(listing: Listing, state: ListingStatus) -> Listing:
     """
     Listing state transition state machine. If no state, sets the state to draft and returns early.
@@ -31,7 +36,9 @@ def _transition_listing_state(listing: Listing, state: ListingStatus) -> Listing
     - Inactive can transition to Active, Void, or Complete
     - Void and Complete cannot transition. They are terminal.
     """
-    current_state: ListingStateTransition | None = ListingStateTransition.objects.filter(listing_id=listing.id).order_by("-created_at", "-id").only("status").first()
+    current_state: ListingStateTransition | None = ListingStateTransition.objects.filter(
+        listing_id=listing.id).order_by("-created_at", "-id").only("status").first()
+
     def next_state():
         ListingStateTransition.objects.create(listing_id=listing.pk, status=state.value)
 
@@ -65,14 +72,72 @@ def _transition_listing_state(listing: Listing, state: ListingStatus) -> Listing
 
     return listing
 
+
 def pause_listing(listing: Listing) -> Listing:
     return _transition_listing_state(listing, ListingStatus.INACTIVE)
+
 
 def void_listing(listing: Listing) -> Listing:
     return _transition_listing_state(listing, ListingStatus.VOID)
 
+
 def complete_listing(listing: Listing) -> Listing:
     return _transition_listing_state(listing, ListingStatus.COMPLETE)
 
+
 def activate_listing(listing: Listing) -> Listing:
     return _transition_listing_state(listing, ListingStatus.ACTIVE)
+
+
+class CannotBidOnOwnListing(BaseException):
+    """Cannot bid on own listing."""
+    def __str__(self) -> str:
+        return "Cannot bid on own listing."
+
+
+class BidBehindCurrentLeader(BaseException):
+    """Bid submitted is behind current leader"""
+    def __str__(self) -> str:
+        return "Bid submitted is behind current leader"
+
+
+class BidBelowStartingPrice(BaseException):
+    """Bid is below starting price"""
+    def __str__(self) -> str:
+        return "Bid is below starting price"
+
+
+class AlreadyLeadingAuction(BaseException):
+    """Already leading auction"""
+    def __str__(self) -> str:
+        return "Already leading auction"
+
+def place_bid_for(user_id: int, listing: Listing, bid_amount: Decimal):
+    def bid_helper(user_id: int, listing: Listing, bid_amount: Decimal):
+        if listing.item.owner_id == user_id:
+            raise CannotBidOnOwnListing()
+        current_leader: Bid | None = Bid.objects.filter(listing_id=listing.pk).order_by("-amount", "created_at").first()
+        if current_leader is None:
+            if bid_amount <= listing.starting_price:
+                raise BidBelowStartingPrice()
+            Bid.objects.create(listing_id=listing.pk, user_id=user_id, amount=bid_amount)
+            return
+        if current_leader.user_id == user_id:
+            raise AlreadyLeadingAuction
+        if current_leader.amount >= bid_amount:
+            raise BidBehindCurrentLeader()
+        Bid.objects.create(listing_id=listing.pk, user_id=user_id, amount=bid_amount)
+
+    try:
+        synchronise(
+            key=f"{listing.pk}-{user_id}",
+            ttl_seconds=10,
+            retries=5,
+            timeout_seconds=10,
+            callback=bid_helper,
+            user_id=user_id,
+            listing=listing,
+            bid_amount=bid_amount,
+        )
+    except RuntimeError as e:
+        raise e

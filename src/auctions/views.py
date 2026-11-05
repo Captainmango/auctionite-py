@@ -24,3 +24,10 @@ class ListingDetailsView(APIView):
 
     def get(self, request: Request, listing_id: int) -> Response:
         return _listing_controller.get_listing(request, listing_id)
+
+
+class AuctionBidView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request, listing_id: int) -> Response:
+        return _listing_controller.place_bid(request, listing_id)
