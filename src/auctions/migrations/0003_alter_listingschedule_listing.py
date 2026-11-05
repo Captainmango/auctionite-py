@@ -5,15 +5,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('auctions', '0002_alter_listingstatetransition_listing'),
+        ("auctions", "0002_alter_listingstatetransition_listing"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='listingschedule',
-            name='listing',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='scheduled_times', to='auctions.listing'),
+            model_name="listingschedule",
+            name="listing",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.DO_NOTHING,
+                related_name="scheduled_times",
+                to="auctions.listing",
+            ),
         ),
     ]

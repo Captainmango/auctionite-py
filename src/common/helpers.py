@@ -8,13 +8,13 @@ R = TypeVar("R")
 
 
 def synchronise(
-        key: str,
-        ttl_seconds: int = 10,
-        retries: int | None = None,
-        timeout_seconds: int | None = None,
-        callback: Callable[P, R] = lambda : {},
-        *args: P.args,
-        **kwargs: P.kwargs
+    key: str,
+    ttl_seconds: int = 10,
+    retries: int | None = None,
+    timeout_seconds: int | None = None,
+    callback: Callable[P, R] = lambda: {},
+    *args: P.args,
+    **kwargs: P.kwargs,
 ) -> R:
     """
     Creates a distributed mutex using cache so that race conditions cannot happen. Places a key that is checked before
@@ -27,7 +27,9 @@ def synchronise(
         # Wait then try again
         if timeout_seconds is not None and timeout_seconds > 0:
             sleep(timeout_seconds)
-        return synchronise(key, ttl_seconds, retries-1, timeout_seconds, callback, *args, **kwargs)
+        return synchronise(
+            key, ttl_seconds, retries or 0 - 1, timeout_seconds, callback, *args, **kwargs
+        )
 
     # Set the lock
     cache.set(key, key, ttl_seconds)

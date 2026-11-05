@@ -8,6 +8,7 @@ class Item(BaseModel):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, blank=False
     )
+    owner_id: int
     name = models.CharField(max_length=200, blank=False)
     description = models.TextField(blank=False)
 

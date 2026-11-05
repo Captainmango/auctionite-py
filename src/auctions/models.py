@@ -22,6 +22,7 @@ class ListingStatus(StrEnum):
     def editable_states(cls) -> list[str]:
         return [cls.INACTIVE, cls.DRAFT]
 
+
 class Listing(BaseModel):
     item = models.OneToOneField(
         Item, on_delete=models.DO_NOTHING, blank=False, null=False
@@ -41,7 +42,9 @@ class Listing(BaseModel):
 
 
 class ListingSchedule(BaseModel):
-    listing = models.ForeignKey(Listing, on_delete=models.DO_NOTHING, related_name="scheduled_times")
+    listing = models.ForeignKey(
+        Listing, on_delete=models.DO_NOTHING, related_name="scheduled_times"
+    )
     activates_at = models.DateTimeField(blank=False, null=True)
     deactivates_at = models.DateTimeField(blank=False, null=True)
 
@@ -55,7 +58,9 @@ class ListingSchedule(BaseModel):
 
 
 class ListingStateTransition(BaseModel):
-    listing = models.ForeignKey(Listing, on_delete=models.DO_NOTHING, related_name="status")
+    listing = models.ForeignKey(
+        Listing, on_delete=models.DO_NOTHING, related_name="status"
+    )
     status = models.CharField(
         choices=ListingStatus.as_dict(),
         default=ListingStatus.DRAFT,

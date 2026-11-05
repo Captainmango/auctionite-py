@@ -25,6 +25,7 @@ payload = {
     "password": "super-secure",
 }
 
+
 def create_dummy_listing(item: Item, price: Decimal) -> Listing:
     listing = Listing.objects.create(starting_price=price, item_id=item.pk)
     ListingStateTransition.objects.create(listing_id=listing.pk)
@@ -92,10 +93,11 @@ class ListingBasicViewTest(APITestCase):
             description="Test Item Description",
             owner_id=self.user.id,
         )
-        res = self.client.post(reverse("listings.create"), {
-            "item_id": another_item.pk,
-            "starting_price": 23.99
-        }, format="json")
+        res = self.client.post(
+            reverse("listings.create"),
+            {"item_id": another_item.pk, "starting_price": 23.99},
+            format="json",
+        )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         data = res.json().get("data")
         listing = Listing.objects.filter(pk=data.get("id")).first()
@@ -152,7 +154,9 @@ class ListingStateMachineTest(TestCase):
             (ListingStatus.VOID, void_listing),
         ]:
             with self.subTest(target=state.value):
-                ListingStateTransition.objects.filter(listing_id=self.listing.pk).delete()
+                ListingStateTransition.objects.filter(
+                    listing_id=self.listing.pk
+                ).delete()
                 self._set_state(ListingStatus.DRAFT)
                 action(self.listing)
                 self.assertEqual(self._latest_status(), state.value)
@@ -176,7 +180,9 @@ class ListingStateMachineTest(TestCase):
             (ListingStatus.COMPLETE, complete_listing),
         ]:
             with self.subTest(target=state.value):
-                ListingStateTransition.objects.filter(listing_id=self.listing.pk).delete()
+                ListingStateTransition.objects.filter(
+                    listing_id=self.listing.pk
+                ).delete()
                 self._set_state(ListingStatus.ACTIVE)
                 action(self.listing)
                 self.assertEqual(self._latest_status(), state.value)
@@ -194,7 +200,9 @@ class ListingStateMachineTest(TestCase):
             (ListingStatus.COMPLETE, complete_listing),
         ]:
             with self.subTest(target=state.value):
-                ListingStateTransition.objects.filter(listing_id=self.listing.pk).delete()
+                ListingStateTransition.objects.filter(
+                    listing_id=self.listing.pk
+                ).delete()
                 self._set_state(ListingStatus.INACTIVE)
                 action(self.listing)
                 self.assertEqual(self._latest_status(), state.value)
@@ -258,7 +266,9 @@ class ListingStateMachineTest(TestCase):
             (ListingStatus.COMPLETE, False),
         ]:
             with self.subTest(state=state.value):
-                ListingStateTransition.objects.filter(listing_id=self.listing.pk).delete()
+                ListingStateTransition.objects.filter(
+                    listing_id=self.listing.pk
+                ).delete()
                 self._set_state(state)
                 self.assertEqual(self.listing.can_be_edited, editable)
 
@@ -285,32 +295,22 @@ class AuctionBidViewTest(APITestCase):
 
     def test_it_stops_owner_bidding_on_own_listing(self):
         self.client.force_authenticate(self.owner)
-        res = self.client.post(self.url, {
-            "amount": 26.00
-        })
+        res = self.client.post(self.url, {"amount": 26.00})
         self.assertEqual(res.status_code, status.HTTP_409_CONFLICT)
 
     def test_it_ensures_starting_price_is_checked(self):
         self.client.force_authenticate(self.buyer)
-        res = self.client.post(self.url, {
-            "amount": 20.00
-        })
+        res = self.client.post(self.url, {"amount": 20.00})
         self.assertEqual(res.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     def test_it_does_not_allow_double_bidding(self):
         self.client.force_authenticate(self.buyer)
-        self.client.post(self.url, {
-            "amount": 26.00
-        })
-        res = self.client.post(self.url, {
-            "amount": 27.00
-        })
+        self.client.post(self.url, {"amount": 26.00})
+        res = self.client.post(self.url, {"amount": 27.00})
         self.assertEqual(res.status_code, status.HTTP_409_CONFLICT)
 
     def test_it_waits_to_place_bid(self):
         self.client.force_authenticate(self.buyer)
         cache.set(f"{self.listing.pk}-{self.buyer.pk}", "", timeout=2)
-        res = self.client.post(self.url, {
-            "amount": 26.00
-        })
+        res = self.client.post(self.url, {"amount": 26.00})
         self.assertEqual(res.status_code, status.HTTP_200_OK)

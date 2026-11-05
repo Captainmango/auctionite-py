@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
 
-from django.core.cache import cache
-
-from accounts.models import User
-from auctions.errors import CannotBidOnOwnListing, BidBelowStartingPrice, AlreadyLeadingAuction, BidBehindCurrentLeader
-from auctions.models import Listing, ListingStateTransition, ListingStatus, Bid
+from auctions.errors import (
+    AlreadyLeadingAuction,
+    BidBehindCurrentLeader,
+    BidBelowStartingPrice,
+    CannotBidOnOwnListing,
+)
+from auctions.models import Bid, Listing, ListingStateTransition, ListingStatus
 from common.helpers import synchronise
 from items.models import Item
 
@@ -19,10 +20,11 @@ class CreateListingPayload:
 
 def create_listing(payload: CreateListingPayload) -> Listing:
     listing = Listing.objects.create(
-        item_id=payload.item.pk,
-        starting_price=payload.starting_price
+        item_id=payload.item.pk, starting_price=payload.starting_price
     )
-    ListingStateTransition.objects.create(listing_id=listing.pk, status=ListingStatus.DRAFT.value)
+    ListingStateTransition.objects.create(
+        listing_id=listing.pk, status=ListingStatus.DRAFT.value
+    )
     return listing
 
 
@@ -37,14 +39,20 @@ def _transition_listing_state(listing: Listing, state: ListingStatus) -> Listing
     - Inactive can transition to Active, Void, or Complete
     - Void and Complete cannot transition. They are terminal.
     """
-    current_state: ListingStateTransition | None = ListingStateTransition.objects.filter(
-        listing_id=listing.id).order_by("-created_at", "-id").only("status").first()
+    current_state: ListingStateTransition | None = (
+        ListingStateTransition.objects.filter(listing_id=listing.id)
+        .order_by("-created_at", "-id")
+        .only("status")
+        .first()
+    )
 
     def next_state():
         ListingStateTransition.objects.create(listing_id=listing.pk, status=state.value)
 
     if not current_state or current_state.status not in list(ListingStatus):
-        ListingStateTransition.objects.create(listing_id=listing.pk, status=ListingStatus.DRAFT.value)
+        ListingStateTransition.objects.create(
+            listing_id=listing.pk, status=ListingStatus.DRAFT.value
+        )
         return listing
 
     if current_state.status in [ListingStatus.COMPLETE, ListingStatus.VOID]:
@@ -58,7 +66,11 @@ def _transition_listing_state(listing: Listing, state: ListingStatus) -> Listing
             raise RuntimeError("Invalid transition")
 
     if current_state.status == ListingStatus.ACTIVE.value:
-        if state in [ListingStatus.INACTIVE, ListingStatus.VOID, ListingStatus.COMPLETE]:
+        if state in [
+            ListingStatus.INACTIVE,
+            ListingStatus.VOID,
+            ListingStatus.COMPLETE,
+        ]:
             next_state()
             return listing
         else:
@@ -91,20 +103,24 @@ def activate_listing(listing: Listing) -> Listing:
 
 
 def place_bid_for(user_id: int, listing: Listing, bid_amount: Decimal):
-    def bid_helper(ui: int, l: Listing, ba: Decimal):
-        if l.item.owner_id == ui:
+    def bid_helper(ui: int, li: Listing, ba: Decimal):
+        if li.item.owner_id == ui:
             raise CannotBidOnOwnListing()
-        current_leader: Bid | None = Bid.objects.filter(listing_id=l.pk).order_by("-amount", "created_at").first()
+        current_leader: Bid | None = (
+            Bid.objects.filter(listing_id=li.pk)
+            .order_by("-amount", "created_at")
+            .first()
+        )
         if current_leader is None:
-            if ba <= l.starting_price:
+            if ba <= li.starting_price:
                 raise BidBelowStartingPrice()
-            Bid.objects.create(listing_id=l.pk, user_id=ui, amount=ba)
+            Bid.objects.create(listing_id=li.pk, user_id=ui, amount=ba)
             return
         if current_leader.user_id == ui:
             raise AlreadyLeadingAuction
         if current_leader.amount >= ba:
             raise BidBehindCurrentLeader()
-        Bid.objects.create(listing_id=l.pk, user_id=ui, amount=ba)
+        Bid.objects.create(listing_id=li.pk, user_id=ui, amount=ba)
 
     try:
         synchronise(
@@ -114,7 +130,7 @@ def place_bid_for(user_id: int, listing: Listing, bid_amount: Decimal):
             timeout_seconds=10,
             callback=bid_helper,
             ui=user_id,
-            l=listing,
+            li=listing,
             ba=bid_amount,
         )
     except RuntimeError as e:

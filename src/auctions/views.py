@@ -5,7 +5,6 @@ from rest_framework.views import APIView
 
 from auctions.controllers import ListingController
 
-
 _listing_controller = ListingController()
 
 

@@ -6,7 +6,9 @@ from items.serialisers import ItemSerialiser
 
 class CreateListingRequest(serializers.Serializer):
     item_id = serializers.BigIntegerField(required=True)
-    starting_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
+    starting_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, required=True
+    )
 
 
 class ListingScheduleSerialiser(serializers.ModelSerializer):
@@ -44,4 +46,6 @@ class ListingDetailsSerialiser(serializers.ModelSerializer):
 
 
 class BidAmountSerialiser(serializers.Serializer):
-    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0, required=True)
+    amount = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=True
+    )
