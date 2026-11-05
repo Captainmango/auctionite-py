@@ -1,8 +1,25 @@
+from enum import StrEnum
+
 from django.db import models
 
 from common.models import BaseModel
 from items.models import Item
 
+
+class ListingStatus(StrEnum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    VOID = "VOID"
+    COMPLETE = "COMPLETE"
+
+    @classmethod
+    def as_dict(cls) -> dict[str, str]:
+        return {m.name: m.value for m in cls}
+
+    @classmethod
+    def editable_states(cls) -> list[str]:
+        return [cls.INACTIVE, cls.DRAFT]
 
 class Listing(BaseModel):
     item = models.OneToOneField(
@@ -14,9 +31,14 @@ class Listing(BaseModel):
         db_table = "listings"
         indexes = [models.Index(fields=["item_id"])]
 
+    @property
+    def can_be_edited(self) -> bool:
+        current_state = ListingStatus(ListingStateTransition.objects.order_by("-created_at", "-id").only("status").first())
+        return current_state in ListingStatus.editable_states()
+
 
 class ListingSchedule(BaseModel):
-    listing = models.ForeignKey(Listing, on_delete=models.DO_NOTHING)
+    listing = models.ForeignKey(Listing, on_delete=models.DO_NOTHING, related_name="scheduled_times")
     activates_at = models.DateTimeField(blank=False, null=True)
     deactivates_at = models.DateTimeField(blank=False, null=True)
 
@@ -30,22 +52,10 @@ class ListingSchedule(BaseModel):
 
 
 class ListingStateTransition(BaseModel):
-    DRAFT = "DRAFT"
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-    VOID = "VOID"
-    COMPLETE = "COMPLETE"
-    LISTING_STATUSES = {
-        DRAFT: DRAFT,
-        ACTIVE: ACTIVE,
-        INACTIVE: INACTIVE,
-        VOID: VOID,
-        COMPLETE: COMPLETE,
-    }
-    listing = models.ForeignKey(Listing, on_delete=models.DO_NOTHING)
+    listing = models.ForeignKey(Listing, on_delete=models.DO_NOTHING, related_name="status")
     status = models.CharField(
-        choices=LISTING_STATUSES,
-        default=DRAFT,
+        choices=ListingStatus.as_dict(),
+        default=ListingStatus.DRAFT,
     )
 
     class Meta:
