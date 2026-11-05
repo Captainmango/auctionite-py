@@ -2,6 +2,7 @@ from enum import StrEnum
 
 from django.db import models
 
+from accounts.models import User
 from common.models import BaseModel
 from items.models import Item
 
@@ -69,7 +70,7 @@ class Bid(BaseModel):
     listing = models.ForeignKey(
         Listing, on_delete=models.DO_NOTHING, related_name="bids"
     )
-    user = models.ForeignKey(Listing, on_delete=models.DO_NOTHING)
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:

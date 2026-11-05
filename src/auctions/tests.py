@@ -313,5 +313,4 @@ class AuctionBidViewTest(APITestCase):
         res = self.client.post(self.url, {
             "amount": 26.00
         })
-        print(res.json())
         self.assertEqual(res.status_code, status.HTTP_200_OK)

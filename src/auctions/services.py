@@ -5,6 +5,7 @@ from typing import Optional
 from django.core.cache import cache
 
 from accounts.models import User
+from auctions.errors import CannotBidOnOwnListing, BidBelowStartingPrice, AlreadyLeadingAuction, BidBehindCurrentLeader
 from auctions.models import Listing, ListingStateTransition, ListingStatus, Bid
 from common.helpers import synchronise
 from items.models import Item
@@ -89,44 +90,21 @@ def activate_listing(listing: Listing) -> Listing:
     return _transition_listing_state(listing, ListingStatus.ACTIVE)
 
 
-class CannotBidOnOwnListing(BaseException):
-    """Cannot bid on own listing."""
-    def __str__(self) -> str:
-        return "Cannot bid on own listing."
-
-
-class BidBehindCurrentLeader(BaseException):
-    """Bid submitted is behind current leader"""
-    def __str__(self) -> str:
-        return "Bid submitted is behind current leader"
-
-
-class BidBelowStartingPrice(BaseException):
-    """Bid is below starting price"""
-    def __str__(self) -> str:
-        return "Bid is below starting price"
-
-
-class AlreadyLeadingAuction(BaseException):
-    """Already leading auction"""
-    def __str__(self) -> str:
-        return "Already leading auction"
-
 def place_bid_for(user_id: int, listing: Listing, bid_amount: Decimal):
-    def bid_helper(user_id: int, listing: Listing, bid_amount: Decimal):
-        if listing.item.owner_id == user_id:
+    def bid_helper(ui: int, l: Listing, ba: Decimal):
+        if l.item.owner_id == ui:
             raise CannotBidOnOwnListing()
-        current_leader: Bid | None = Bid.objects.filter(listing_id=listing.pk).order_by("-amount", "created_at").first()
+        current_leader: Bid | None = Bid.objects.filter(listing_id=l.pk).order_by("-amount", "created_at").first()
         if current_leader is None:
-            if bid_amount <= listing.starting_price:
+            if ba <= l.starting_price:
                 raise BidBelowStartingPrice()
-            Bid.objects.create(listing_id=listing.pk, user_id=user_id, amount=bid_amount)
+            Bid.objects.create(listing_id=l.pk, user_id=ui, amount=ba)
             return
-        if current_leader.user_id == user_id:
+        if current_leader.user_id == ui:
             raise AlreadyLeadingAuction
-        if current_leader.amount >= bid_amount:
+        if current_leader.amount >= ba:
             raise BidBehindCurrentLeader()
-        Bid.objects.create(listing_id=listing.pk, user_id=user_id, amount=bid_amount)
+        Bid.objects.create(listing_id=l.pk, user_id=ui, amount=ba)
 
     try:
         synchronise(
@@ -135,9 +113,9 @@ def place_bid_for(user_id: int, listing: Listing, bid_amount: Decimal):
             retries=5,
             timeout_seconds=10,
             callback=bid_helper,
-            user_id=user_id,
-            listing=listing,
-            bid_amount=bid_amount,
+            ui=user_id,
+            l=listing,
+            ba=bid_amount,
         )
     except RuntimeError as e:
         raise e
