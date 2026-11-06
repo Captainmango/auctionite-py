@@ -23,7 +23,7 @@ class LoginView(APIView):
 
 
 class MeDetailsView(APIView):
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request: Request) -> Response:
         return _auth_controller.me_details(request)

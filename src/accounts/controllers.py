@@ -14,14 +14,12 @@ from accounts.serialisers import (
 
 class AccountsController:
     def __init__(
-        self, register_serialiser=None, login_serialiser=None, me_serialiser=None
+        self,
     ):
-        self._register_serialiser = register_serialiser or RegisterRequestSerialiser
-        self._login_serialiser = login_serialiser or LoginRequestSerialiser
-        self._me_serialiser = me_serialiser or UserSerialiser
+        ...
 
     def register_user(self, request: Request) -> Response:
-        serialiser = self._register_serialiser(data=request.data)
+        serialiser = RegisterRequestSerialiser(data=request.data)
         serialiser.is_valid(raise_exception=True)
         try:
             serialiser.save()
@@ -30,7 +28,7 @@ class AccountsController:
         return Response(serialiser.data, status=status.HTTP_201_CREATED)
 
     def login_user(self, request: Request) -> Response:
-        serialiser = self._login_serialiser(
+        serialiser = LoginRequestSerialiser(
             data=request.data, context={"request": request}
         )
         serialiser.is_valid(raise_exception=True)
@@ -40,6 +38,6 @@ class AccountsController:
 
     def me_details(self, request: Request) -> Response:
         if not isinstance(request.user, AnonymousUser):
-            serialiser = self._me_serialiser(request.user)
+            serialiser = UserSerialiser(request.user)
             return Response(serialiser.data, status=status.HTTP_200_OK)
         return Response({}, status=status.HTTP_401_UNAUTHORIZED)
