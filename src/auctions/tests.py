@@ -8,15 +8,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import User
 from auctions.models import Listing, ListingStateTransition, ListingStatus
-from auctions.services import (
-    CreateListingPayload,
-    _transition_listing_state,
-    activate_listing,
-    complete_listing,
-    create_listing,
-    pause_listing,
-    void_listing,
-)
+from auctions.services import CreateListingPayload, ListingService
 from items.models import Item
 
 payload = {
@@ -106,6 +98,7 @@ class ListingBasicViewTest(APITestCase):
 
 class ListingStateMachineTest(TestCase):
     def setUp(self):
+        self.service = ListingService()
         self.user = User.objects.create_user(**payload)
         self.item = Item.objects.create(
             name="State Machine Item",
@@ -135,7 +128,7 @@ class ListingStateMachineTest(TestCase):
             description="Test Item Description",
             owner_id=self.user.id,
         )
-        listing = create_listing(
+        listing = self.service.create(
             CreateListingPayload(item=fresh_item, starting_price=Decimal("10.00"))
         )
         latest = listing.status.order_by("-created_at", "-id").first()
@@ -143,15 +136,15 @@ class ListingStateMachineTest(TestCase):
         self.assertEqual(latest.status, ListingStatus.DRAFT.value)
 
     def test_stateless_listing_any_transition_sets_draft_and_returns_early(self):
-        activate_listing(self.listing)
+        self.service.activate(self.listing)
         self.assertEqual(self._latest_status(), ListingStatus.DRAFT.value)
         self.assertEqual(self._transition_count(), 1)
 
     def test_draft_can_transition_to_active_inactive_or_void(self):
         for state, action in [
-            (ListingStatus.ACTIVE, activate_listing),
-            (ListingStatus.INACTIVE, pause_listing),
-            (ListingStatus.VOID, void_listing),
+            (ListingStatus.ACTIVE, self.service.activate),
+            (ListingStatus.INACTIVE, self.service.pause),
+            (ListingStatus.VOID, self.service.void),
         ]:
             with self.subTest(target=state.value):
                 ListingStateTransition.objects.filter(
@@ -164,20 +157,20 @@ class ListingStateMachineTest(TestCase):
     def test_draft_cannot_transition_to_complete(self):
         self._set_state(ListingStatus.DRAFT)
         with self.assertRaises(RuntimeError):
-            complete_listing(self.listing)
+            self.service.complete(self.listing)
         self.assertEqual(self._latest_status(), ListingStatus.DRAFT.value)
 
     def test_draft_cannot_transition_to_draft(self):
         self._set_state(ListingStatus.DRAFT)
         with self.assertRaises(RuntimeError):
-            _transition_listing_state(self.listing, ListingStatus.DRAFT)
+            self.service.transition_state(self.listing, ListingStatus.DRAFT)
         self.assertEqual(self._transition_count(), 1)
 
     def test_active_can_transition_to_inactive_void_or_complete(self):
         for state, action in [
-            (ListingStatus.INACTIVE, pause_listing),
-            (ListingStatus.VOID, void_listing),
-            (ListingStatus.COMPLETE, complete_listing),
+            (ListingStatus.INACTIVE, self.service.pause),
+            (ListingStatus.VOID, self.service.void),
+            (ListingStatus.COMPLETE, self.service.complete),
         ]:
             with self.subTest(target=state.value):
                 ListingStateTransition.objects.filter(
@@ -190,14 +183,14 @@ class ListingStateMachineTest(TestCase):
     def test_active_cannot_transition_to_active(self):
         self._set_state(ListingStatus.ACTIVE)
         with self.assertRaises(RuntimeError):
-            activate_listing(self.listing)
+            self.service.activate(self.listing)
         self.assertEqual(self._latest_status(), ListingStatus.ACTIVE.value)
 
     def test_inactive_can_transition_to_active_void_or_complete(self):
         for state, action in [
-            (ListingStatus.ACTIVE, activate_listing),
-            (ListingStatus.VOID, void_listing),
-            (ListingStatus.COMPLETE, complete_listing),
+            (ListingStatus.ACTIVE, self.service.activate),
+            (ListingStatus.VOID, self.service.void),
+            (ListingStatus.COMPLETE, self.service.complete),
         ]:
             with self.subTest(target=state.value):
                 ListingStateTransition.objects.filter(
@@ -210,12 +203,17 @@ class ListingStateMachineTest(TestCase):
     def test_inactive_cannot_transition_to_inactive(self):
         self._set_state(ListingStatus.INACTIVE)
         with self.assertRaises(RuntimeError):
-            pause_listing(self.listing)
+            self.service.pause(self.listing)
         self.assertEqual(self._latest_status(), ListingStatus.INACTIVE.value)
 
     def test_void_is_terminal(self):
         self._set_state(ListingStatus.VOID)
-        for action in [activate_listing, pause_listing, complete_listing, void_listing]:
+        for action in [
+            self.service.activate,
+            self.service.pause,
+            self.service.complete,
+            self.service.void,
+        ]:
             with self.subTest(action=action.__name__):
                 with self.assertRaises(RuntimeError):
                     action(self.listing)
@@ -224,7 +222,12 @@ class ListingStateMachineTest(TestCase):
 
     def test_complete_is_terminal(self):
         self._set_state(ListingStatus.COMPLETE)
-        for action in [activate_listing, pause_listing, complete_listing, void_listing]:
+        for action in [
+            self.service.activate,
+            self.service.pause,
+            self.service.complete,
+            self.service.void,
+        ]:
             with self.subTest(action=action.__name__):
                 with self.assertRaises(RuntimeError):
                     action(self.listing)
@@ -233,9 +236,9 @@ class ListingStateMachineTest(TestCase):
 
     def test_successful_transitions_append_history(self):
         self._set_state(ListingStatus.DRAFT)
-        activate_listing(self.listing)
-        pause_listing(self.listing)
-        complete_listing(self.listing)
+        self.service.activate(self.listing)
+        self.service.pause(self.listing)
+        self.service.complete(self.listing)
         history = list(
             self.listing.status.order_by("created_at", "id").values_list(
                 "status", flat=True
@@ -254,7 +257,7 @@ class ListingStateMachineTest(TestCase):
     def test_failed_transition_writes_no_history(self):
         self._set_state(ListingStatus.DRAFT)
         with self.assertRaises(RuntimeError):
-            complete_listing(self.listing)
+            self.service.complete(self.listing)
         self.assertEqual(self._transition_count(), 1)
 
     def test_can_be_edited_by_state(self):

@@ -12,7 +12,7 @@ def synchronise(
     ttl_seconds: int = 10,
     retries: int | None = None,
     timeout_seconds: int | None = None,
-    callback: Callable[P, R] = lambda: {},
+    callback: Callable[P, R] = lambda: None, # No op by default
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> R:
